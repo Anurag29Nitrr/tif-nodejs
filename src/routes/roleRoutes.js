@@ -3,39 +3,40 @@ const Role = require('../models/Role');
 
 const router = express.Router();
 
-//  Create a Role
+// Create Role
 router.post('/v1/role', async (req, res) => {
-  try {
-    const { name } = req.body;
+  const { name } = req.body;
 
-    // Check if role already exists
+  if (!name || typeof name !== 'string' || name.length > 64) {
+    return res.status(400).json({ status: false, error: { message: 'INVALID_INPUT' } });
+  }
+
+  try {
     const existingRole = await Role.findOne({ name });
     if (existingRole) {
-      return res.status(400).json({ error: "Role already exists" });
+      return res.status(400).json({ status: false, error: { message: 'ROLE_ALREADY_EXISTS' } });
     }
 
-    const newRole = await Role.create({ name });
-
+    const role = await Role.create({ name });
     res.status(201).json({
       status: true,
-      content: { data: newRole }
+      content: { data: { id: role.id, name: role.name, created_at: role.created_at, updated_at: role.updated_at } },
     });
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+  } catch (err) {
+    res.status(500).json({ status: false, error: { message: 'INTERNAL_SERVER_ERROR' } });
   }
 });
 
-//  Get All Roles
+// Get All Roles
 router.get('/v1/role', async (req, res) => {
   try {
     const roles = await Role.find();
-
-    res.status(200).json({
+    res.json({
       status: true,
-      content: { data: roles }
+      content: { data: roles.map(role => ({ id: role.id, name: role.name, created_at: role.created_at, updated_at: role.updated_at })) },
     });
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+  } catch (err) {
+    res.status(500).json({ status: false, error: { message: 'INTERNAL_SERVER_ERROR' } });
   }
 });
 
